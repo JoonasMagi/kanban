@@ -4,9 +4,13 @@ import ee.vikk.kanban.model.Board;
 import ee.vikk.kanban.service.BoardService;
 import ee.vikk.kanban.service.ValidationException;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.sql.SQLException;
@@ -104,31 +108,27 @@ public class MainController implements Initializable {
     }
 
     /**
-     * Open a board (placeholder for now)
+     * Open a board in new window
      * @param board Board to open
      */
     private void openBoard(Board board) {
         try {
-            Board fullBoard = boardService.getBoardWithColumns(board.getId());
-            setStatusMessage("Opened board: " + fullBoard.getName() + " with " + fullBoard.getColumns().size() + " columns");
-            
-            // For now, just show board info in a dialog
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Board Information");
-            alert.setHeaderText("Board: " + fullBoard.getName());
-            
-            StringBuilder content = new StringBuilder();
-            content.append("Created: ").append(fullBoard.getCreatedAt()).append("\n");
-            content.append("Columns: ").append(fullBoard.getColumns().size()).append("\n\n");
-            
-            for (int i = 0; i < fullBoard.getColumns().size(); i++) {
-                content.append((i + 1)).append(". ").append(fullBoard.getColumns().get(i).getName()).append("\n");
-            }
-            
-            alert.setContentText(content.toString());
-            alert.showAndWait();
-            
-        } catch (SQLException e) {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/board.fxml"));
+            Parent root = loader.load();
+
+            BoardController boardController = loader.getController();
+            boardController.loadBoard(board.getId());
+
+            Stage boardStage = new Stage();
+            boardStage.setTitle("KanBan Board - " + board.getName());
+            boardStage.setScene(new Scene(root, 1200, 800));
+            boardStage.setMinWidth(800);
+            boardStage.setMinHeight(600);
+            boardStage.show();
+
+            setStatusMessage("Opened board: " + board.getName());
+
+        } catch (Exception e) {
             showError("Failed to open board: " + e.getMessage());
         }
     }
