@@ -231,3 +231,34 @@
     -fx-border-width: 2px;
     -fx-border-style: dashed;
 }
+
+/* Add column styling */
+.add-column-box {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 2px;
+    -fx-border-style: dashed;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px;
+    -fx-alignment: center;
+}
+
+.add-column-button {
+    -fx-background-color: #28a745;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 15px 20px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.add-column-button:hover {
+    -fx-background-color: #218838;
+}
+
+.add-column-button:pressed {
+    -fx-background-color: #1e7e34;
+}

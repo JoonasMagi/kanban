@@ -10,6 +10,7 @@ import java.sql.Statement;
  */
 public class DatabaseConnection {
     private static final String DATABASE_URL = "jdbc:sqlite:kanban.db";
+    private static final String TEST_DATABASE_URL = "jdbc:sqlite:test-kanban.db";
     private static Connection connection;
 
     /**
@@ -19,9 +20,28 @@ public class DatabaseConnection {
      */
     public static Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(DATABASE_URL);
+            String url = isTestEnvironment() ? TEST_DATABASE_URL : DATABASE_URL;
+            connection = DriverManager.getConnection(url);
         }
         return connection;
+    }
+
+    /**
+     * Check if we are running in test environment
+     * @return true if running tests, false otherwise
+     */
+    private static boolean isTestEnvironment() {
+        // Check if JUnit is in the stack trace
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stackTrace) {
+            String className = element.getClassName();
+            if (className.contains("junit") ||
+                className.contains("Test") ||
+                className.endsWith("Test")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

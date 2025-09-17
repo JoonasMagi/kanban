@@ -90,6 +90,7 @@ Desktop.ini
 *.sqlite
 *.sqlite3
 kanban.db
+test-kanban.db
 
 # JavaFX specific
 *.fxbuild

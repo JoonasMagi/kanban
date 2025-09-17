@@ -22,7 +22,7 @@ JavaFX töölauarakendus ülesannete haldamiseks KanBan tahvlil.
 
 ## Tehnoloogiad
 
-- Java 17+
+- Java 24
 - JavaFX 19
 - SQLite andmebaas
 - Gradle build süsteem

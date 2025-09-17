@@ -5,6 +5,7 @@ import ee.vikk.kanban.model.Column;
 import ee.vikk.kanban.model.Task;
 import ee.vikk.kanban.service.BoardService;
 import ee.vikk.kanban.service.TaskService;
+import ee.vikk.kanban.service.ColumnService;
 import ee.vikk.kanban.service.ValidationException;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -37,12 +38,14 @@ public class BoardController implements Initializable {
 
     private BoardService boardService;
     private TaskService taskService;
+    private ColumnService columnService;
     private Board currentBoard;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         boardService = new BoardService();
         taskService = new TaskService();
+        columnService = new ColumnService();
     }
 
     /**
@@ -76,6 +79,10 @@ public class BoardController implements Initializable {
             VBox columnBox = createColumnBox(column);
             columnsContainer.getChildren().add(columnBox);
         }
+
+        // Add "Add Column" button at the end
+        VBox addColumnBox = createAddColumnBox();
+        columnsContainer.getChildren().add(addColumnBox);
     }
 
     /**
@@ -383,6 +390,53 @@ public class BoardController implements Initializable {
 
             event.setDropCompleted(success);
             event.consume();
+        });
+    }
+
+    /**
+     * Create "Add Column" box
+     * @return VBox with add column button
+     */
+    private VBox createAddColumnBox() {
+        VBox addColumnBox = new VBox(10);
+        addColumnBox.getStyleClass().add("add-column-box");
+        addColumnBox.setPrefWidth(250);
+        addColumnBox.setMinWidth(250);
+        addColumnBox.setMaxWidth(250);
+
+        Button addColumnButton = new Button("+ Add Column");
+        addColumnButton.getStyleClass().add("add-column-button");
+        addColumnButton.setPrefWidth(230);
+        addColumnButton.setOnAction(e -> showAddColumnDialog());
+
+        addColumnBox.getChildren().add(addColumnButton);
+        VBox.setMargin(addColumnButton, new Insets(10));
+
+        return addColumnBox;
+    }
+
+    /**
+     * Show add column dialog
+     */
+    private void showAddColumnDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Add Column");
+        dialog.setHeaderText("Add New Column");
+        dialog.setContentText("Column name:");
+
+        dialog.showAndWait().ifPresent(columnName -> {
+            if (!columnName.trim().isEmpty()) {
+                try {
+                    columnService.addColumn(currentBoard.getId(), columnName.trim());
+                    setStatusMessage("Column '" + columnName + "' added successfully");
+
+                    // Refresh board data and display
+                    currentBoard = boardService.getBoardWithColumns(currentBoard.getId());
+                    displayColumns();
+                } catch (SQLException | ValidationException e) {
+                    showError("Failed to add column: " + e.getMessage());
+                }
+            }
         });
     }
 }
