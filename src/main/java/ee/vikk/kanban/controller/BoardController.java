@@ -10,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.input.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -116,7 +117,10 @@ public class BoardController implements Initializable {
         
         columnBox.getChildren().addAll(columnHeader, addTaskButton, tasksContainer);
         VBox.setVgrow(tasksContainer, Priority.ALWAYS);
-        
+
+        // Setup drop target for the tasks container
+        setupDropTarget(tasksContainer, column);
+
         return columnBox;
     }
 
@@ -159,7 +163,10 @@ public class BoardController implements Initializable {
                 showEditTaskDialog(task);
             }
         });
-        
+
+        // Add drag and drop functionality
+        setupDragAndDrop(taskBox, task);
+
         return taskBox;
     }
 
@@ -301,11 +308,81 @@ public class BoardController implements Initializable {
         statusLabel.setText(message);
         statusLabel.getStyleClass().removeAll("status-message");
         statusLabel.getStyleClass().add("error-message");
-        
+
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText("An error occurred");
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    /**
+     * Setup drag functionality for a task box
+     * @param taskBox Task box to make draggable
+     * @param task Task data
+     */
+    private void setupDragAndDrop(VBox taskBox, Task task) {
+        taskBox.setOnDragDetected(event -> {
+            Dragboard dragboard = taskBox.startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+            content.putString(task.getId().toString());
+            dragboard.setContent(content);
+
+            taskBox.getStyleClass().add("task-dragging");
+            event.consume();
+        });
+
+        taskBox.setOnDragDone(event -> {
+            taskBox.getStyleClass().remove("task-dragging");
+            event.consume();
+        });
+    }
+
+    /**
+     * Setup drop target for a tasks container
+     * @param tasksContainer Container to accept drops
+     * @param targetColumn Target column
+     */
+    private void setupDropTarget(VBox tasksContainer, Column targetColumn) {
+        tasksContainer.setOnDragOver(event -> {
+            if (event.getGestureSource() != tasksContainer &&
+                event.getDragboard().hasString()) {
+                event.acceptTransferModes(TransferMode.MOVE);
+            }
+            event.consume();
+        });
+
+        tasksContainer.setOnDragEntered(event -> {
+            if (event.getGestureSource() != tasksContainer &&
+                event.getDragboard().hasString()) {
+                tasksContainer.getStyleClass().add("drop-target");
+            }
+            event.consume();
+        });
+
+        tasksContainer.setOnDragExited(event -> {
+            tasksContainer.getStyleClass().remove("drop-target");
+            event.consume();
+        });
+
+        tasksContainer.setOnDragDropped(event -> {
+            Dragboard dragboard = event.getDragboard();
+            boolean success = false;
+
+            if (dragboard.hasString()) {
+                try {
+                    Integer taskId = Integer.parseInt(dragboard.getString());
+                    taskService.moveTask(taskId, targetColumn.getId());
+                    success = true;
+                    setStatusMessage("Task moved to " + targetColumn.getName());
+                    displayColumns(); // Refresh the view
+                } catch (SQLException | ValidationException e) {
+                    showError("Failed to move task: " + e.getMessage());
+                }
+            }
+
+            event.setDropCompleted(success);
+            event.consume();
+        });
     }
 }

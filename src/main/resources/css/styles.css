@@ -218,3 +218,16 @@
 .add-task-button:pressed {
     -fx-background-color: #004085;
 }
+
+/* Drag and drop styling */
+.task-dragging {
+    -fx-opacity: 0.5;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);
+}
+
+.drop-target {
+    -fx-background-color: #e3f2fd;
+    -fx-border-color: #2196f3;
+    -fx-border-width: 2px;
+    -fx-border-style: dashed;
+}

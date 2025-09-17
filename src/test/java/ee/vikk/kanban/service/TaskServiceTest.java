@@ -232,8 +232,118 @@ class TaskServiceTest {
         // Then
         Task deletedTask = taskService.getTask(task.getId());
         assertNull(deletedTask, "Deleted task should not be found in database");
-        
+
         List<Task> columnTasks = taskService.getTasksByColumn(testColumn.getId());
         assertTrue(columnTasks.isEmpty(), "Column should be empty after task deletion");
+    }
+
+    /**
+     * Test User Story #3: Task Movement
+     * Acceptance Criteria:
+     * ✓ Task can be dragged with mouse
+     * ✓ Task moves to another column when dropped
+     * ✓ Change is saved to database
+     * ✓ Task order is preserved
+     */
+    @Test
+    void testMoveTask_BetweenColumns_ShouldUpdateColumnAndPosition() throws SQLException, ValidationException {
+        // Given
+        Column sourceColumn = testBoard.getColumns().get(0); // TODO
+        Column targetColumn = testBoard.getColumns().get(1); // IN PROGRESS
+
+        Task task1 = taskService.createTask(sourceColumn.getId(), "Task 1");
+        Task task2 = taskService.createTask(sourceColumn.getId(), "Task 2");
+        Task existingTaskInTarget = taskService.createTask(targetColumn.getId(), "Existing task");
+
+        // When
+        taskService.moveTask(task1.getId(), targetColumn.getId());
+
+        // Then
+        Task movedTask = taskService.getTask(task1.getId());
+        assertEquals(targetColumn.getId(), movedTask.getColumnId(), "Task should be moved to target column");
+        assertEquals(2, movedTask.getPosition(), "Moved task should be positioned after existing tasks");
+
+        // Verify source column still has task2
+        List<Task> sourceColumnTasks = taskService.getTasksByColumn(sourceColumn.getId());
+        assertEquals(1, sourceColumnTasks.size(), "Source column should have 1 remaining task");
+        assertEquals("Task 2", sourceColumnTasks.get(0).getTitle(), "Remaining task should be Task 2");
+
+        // Verify target column has both tasks in correct order
+        List<Task> targetColumnTasks = taskService.getTasksByColumn(targetColumn.getId());
+        assertEquals(2, targetColumnTasks.size(), "Target column should have 2 tasks");
+        assertEquals("Existing task", targetColumnTasks.get(0).getTitle(), "First task should be existing task");
+        assertEquals("Task 1", targetColumnTasks.get(1).getTitle(), "Second task should be moved task");
+    }
+
+    @Test
+    void testMoveTask_ToEmptyColumn_ShouldBeFirstPosition() throws SQLException, ValidationException {
+        // Given
+        Column sourceColumn = testBoard.getColumns().get(0); // TODO
+        Column emptyColumn = testBoard.getColumns().get(2); // DONE (empty)
+
+        Task task = taskService.createTask(sourceColumn.getId(), "Task to move");
+
+        // When
+        taskService.moveTask(task.getId(), emptyColumn.getId());
+
+        // Then
+        Task movedTask = taskService.getTask(task.getId());
+        assertEquals(emptyColumn.getId(), movedTask.getColumnId(), "Task should be moved to empty column");
+        assertEquals(1, movedTask.getPosition(), "Task should be at position 1 in empty column");
+
+        List<Task> emptyColumnTasks = taskService.getTasksByColumn(emptyColumn.getId());
+        assertEquals(1, emptyColumnTasks.size(), "Empty column should now have 1 task");
+        assertEquals("Task to move", emptyColumnTasks.get(0).getTitle(), "Task should be in target column");
+    }
+
+    @Test
+    void testMoveTask_MultipleTasksPreserveOrder() throws SQLException, ValidationException {
+        // Given
+        Column sourceColumn = testBoard.getColumns().get(0); // TODO
+        Column targetColumn = testBoard.getColumns().get(1); // IN PROGRESS
+
+        Task task1 = taskService.createTask(sourceColumn.getId(), "First task");
+        Task task2 = taskService.createTask(sourceColumn.getId(), "Second task");
+        Task task3 = taskService.createTask(sourceColumn.getId(), "Third task");
+
+        // When - Move tasks in different order
+        taskService.moveTask(task2.getId(), targetColumn.getId()); // Move second task first
+        taskService.moveTask(task1.getId(), targetColumn.getId()); // Move first task second
+
+        // Then
+        List<Task> targetColumnTasks = taskService.getTasksByColumn(targetColumn.getId());
+        assertEquals(2, targetColumnTasks.size(), "Target column should have 2 moved tasks");
+        assertEquals("Second task", targetColumnTasks.get(0).getTitle(), "First moved task should be first");
+        assertEquals("First task", targetColumnTasks.get(1).getTitle(), "Second moved task should be second");
+
+        List<Task> sourceColumnTasks = taskService.getTasksByColumn(sourceColumn.getId());
+        assertEquals(1, sourceColumnTasks.size(), "Source column should have 1 remaining task");
+        assertEquals("Third task", sourceColumnTasks.get(0).getTitle(), "Remaining task should be third task");
+    }
+
+    @Test
+    void testMoveTask_WithNonExistentTask_ShouldThrowValidationException() {
+        // Given
+        Integer nonExistentTaskId = 99999;
+        Column targetColumn = testBoard.getColumns().get(1);
+
+        // When & Then
+        ValidationException exception = assertThrows(ValidationException.class,
+            () -> taskService.moveTask(nonExistentTaskId, targetColumn.getId()));
+
+        assertEquals("Task not found with ID: " + nonExistentTaskId, exception.getMessage());
+    }
+
+    @Test
+    void testMoveTask_ToNonExistentColumn_ShouldThrowValidationException() throws SQLException, ValidationException {
+        // Given
+        Task task = taskService.createTask(testColumn.getId(), "Test task");
+        Integer nonExistentColumnId = 99999;
+
+        // When & Then
+        ValidationException exception = assertThrows(ValidationException.class,
+            () -> taskService.moveTask(task.getId(), nonExistentColumnId));
+
+        assertEquals("Column not found with ID: " + nonExistentColumnId, exception.getMessage());
     }
 }
